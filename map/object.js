@@ -27,12 +27,12 @@ export const object = (() => {
           mtlFilename: 'Station0.mtl',
           position: new THREE.Vector3(0, 0, 0),
           scale: 8,
-          collidable: false,
+          collidable: true,
           isCentral: true,
           ka: 0x020202, // Example ambient color (black)
           ks: 0x020202, // Example specular color (black)
           kd: 0x020202, // Example diffuse color (gray)
-        },/*
+        },
         {
           type: 'obj',
           filename: 'Moon.obj',
@@ -98,7 +98,7 @@ export const object = (() => {
           ks: 0x000000,
           kd: 0xFFFF00, // Yellow small moon
         },
-        /*{
+        {
           type: 'obj',
           filename: 'SmallPlanet1.obj',
           mtlFilename: 'SmallPlanet1.mtl',
@@ -110,13 +110,80 @@ export const object = (() => {
         },
         {
           type: 'obj',
-          filename: 'SmallPlanet2.obj',
-          mtlFilename: 'SmallPlanet2.mtl',
+          filename: 'Station1.obj',
+          mtlFilename: 'Station1.mtl',
+          position: new THREE.Vector3(50, 0, 0), // Station0과 겹치지 않도록 위치 조정
+          scale: 8,
+          collidable: true,
+          isCentral: false,
+          ka: 0x020202,
+          ks: 0x020202,
+          kd: 0x020202,
+        },
+        {
+          type: 'obj',
+          filename: 'Moon.obj',
+          mtlFilename: 'Moon.mtl',
+          scale: 5,
+          collidable: true,
+          boundingType: 'sphere',
+          boundingRadius: 3,
+          orbit: { radius: 15, speed:0.5 , angle: Math.random() * Math.PI * 2, height: 0 },
+          ka: 0x050505, // Example ambient color
+          ks: 0x101010, // Example specular color
+          kd: 0x808080, // Example diffuse color
+        },
+        {
+          type: 'obj',
+          filename: 'Planet1.obj',
+          mtlFilename: 'Planet1.mtl',
           scale: 2,
           collidable: true,
           boundingType: 'sphere',
-          boundingRadius: 1.75,
-          orbit: { radius: 22, speed:0.5 , angle: Math.random() * Math.PI * 2, height: -5 },
+          boundingRadius: 5,
+          orbit: { radius: 20, speed:0.5 , angle: Math.random() * Math.PI * 2, height: 5 },
+          ka: 0x000000,
+          ks: 0x000000,
+          kd: 0x00FF00, // Green planet
+        },
+        {
+          type: 'obj',
+          filename: 'Planet2.obj',
+          mtlFilename: 'Planet2.mtl',
+          scale: 2,
+          collidable: true,
+          boundingType: 'sphere',
+          boundingRadius: 5,
+          orbit: { radius: 25, speed:0.5 , angle: Math.random() * Math.PI * 2, height: 15 },
+          ka: 0x000000,
+          ks: 0x000000,
+          kd: 0xFF0000, // Red planet
+        },
+        {
+          type: 'obj',
+          filename: 'Planet3.obj',
+          mtlFilename: 'Planet3.mtl',
+          scale: 2,
+          collidable: true,
+          boundingType: 'sphere',
+          boundingRadius: 15,
+          orbit: { radius: 30, speed:0.5 , angle: Math.random() * Math.PI * 2, height: 10 },
+          ka: 0xff0000,
+          ks: 0xff0000,
+          kd: 0xff0000, // Blue planet
+        },
+        {
+          type: 'obj',
+          filename: 'SmallMoon.obj',
+          mtlFilename: 'SmallMoon.mtl',
+          scale: 2,
+          collidable: true,
+          boundingType: 'sphere',
+          boundingRadius: 1.5,
+          orbit: { radius: 10, speed:0.5 , angle: Math.random() * Math.PI * 2, height: 5 },
+          ka: 0x000000,
+          ks: 0x000000,
+          kd: 0xFFFF00, // Yellow small moon
         },
         {
           type: 'obj',
@@ -130,7 +197,7 @@ export const object = (() => {
           ka: 0x000000,
           ks: 0x000000,
           kd: 0x800080, // Purple spaceship
-        },*/
+        },
       ];
 
       modelsToLoad.forEach((modelInfo) => {
@@ -153,6 +220,7 @@ export const object = (() => {
         model.position.copy(modelInfo.position);
         // Calculate bounding box for the central object (Station)
         this.centralObjectBoundingBox_ = new THREE.Box3().setFromObject(model);
+        this.centralObjectBoundingBox_.getSize(this.centralObjectSize_ = new THREE.Vector3());
       } else {
         // Initial position for orbiting objects will be set in Update
         model.position.set(0, 0, 0); // Temporarily set to origin
@@ -165,6 +233,9 @@ export const object = (() => {
 
       model.traverse((c) => {
         if (c.isMesh) {
+          if (c.name === 'Cube' || c.name === 'Cylinder') {
+            c.visible = false; // Hide the Cube and Cylinder meshes
+          }
           c.castShadow = true;
           c.receiveShadow = true;
 
@@ -245,7 +316,7 @@ export const object = (() => {
 
         if (bounds) {
           this.collidables_.push(collidable);
-          helper.visible = true;
+          helper.visible = false;
           this.debugHelpers_.push({helper: helper, collidable: collidable});
           this.scene_.add(helper);
         }
@@ -288,13 +359,16 @@ export const object = (() => {
       }
 
       const centralPosition = this.centralObject_.position;
+      const centralRadius = Math.max(this.centralObjectSize_.x, this.centralObjectSize_.z) / 2;
 
       this.models_.forEach(item => {
         const { model, orbit } = item;
         if (orbit) {
+          // Ensure orbit radius is larger than central object to avoid overlap
+          const effectiveRadius = Math.max(orbit.radius, centralRadius + 5); // Add some buffer
           orbit.angle += orbit.speed * timeElapsed;
-          const x = centralPosition.x + orbit.radius * Math.cos(orbit.angle);
-          const z = centralPosition.z + orbit.radius * Math.sin(orbit.angle);
+          const x = centralPosition.x + effectiveRadius * Math.cos(orbit.angle);
+          const z = centralPosition.z + effectiveRadius * Math.sin(orbit.angle);
           const y = centralPosition.y + orbit.height;
           model.position.set(x, y, z);
         }
@@ -310,9 +384,6 @@ export const object = (() => {
             collidable.bounds.setFromObject(collidable.model);
             helper.box.copy(collidable.bounds);
         } else if (collidable.type === 'sphere') {
-            const sphere = new THREE.Sphere();
-                    boundingBox.getBoundingSphere(sphere); // Get bounding sphere from AABB
-                    sphere.radius *= 0.8; // 반지름을 80%로 줄임
             helper.position.copy(collidable.bounds.center);
         }
       });
@@ -340,8 +411,19 @@ export const object = (() => {
 
     createChildBoundingBoxes(model) {
         model.updateMatrixWorld(true);
+
+        let cubeMaxY = 0;
+        // First pass: find the max Y of the Cube object
         model.traverse(node => {
-            if (node.isMesh && node.name !== 'map' && node.name !== 'aa') {
+            if (node.isMesh && node.name === 'Cube') {
+                const cubeBoundingBox = new THREE.Box3().setFromObject(node);
+                cubeMaxY = cubeBoundingBox.max.y;
+                console.log(`Found Cube max Y: ${cubeMaxY}`);
+            }
+        });
+
+        model.traverse(node => {
+            if (node.isMesh && node.name !== 'map' && node.name !== 'aa' && node.name !== 'Cube') {
                 console.log(`Found mesh: ${node.name || 'Unnamed Mesh'}. Creating bounding box.`);
                 
                 let boundingBox;
@@ -358,6 +440,28 @@ export const object = (() => {
                 } else {
                     boundingBox = new THREE.Box3().setFromObject(node);
                 }
+
+                // Apply size reduction for Cylinder
+                if (node.name === 'Cylinder') {
+                    const currentSize = new THREE.Vector3();
+                    boundingBox.getSize(currentSize);
+                    const scaleFactor = 0.5; // Reduce to 50%
+                    const newSize = currentSize.multiplyScalar(scaleFactor);
+
+                    // Recalculate min/max based on new size and original center
+                    const center = new THREE.Vector3();
+                    boundingBox.getCenter(center);
+                    boundingBox.min.copy(center).sub(newSize.clone().multiplyScalar(0.5));
+                    boundingBox.max.copy(center).add(newSize.clone().multiplyScalar(0.5));
+                }
+
+                // Adjust bounding box to match Cube's max Y
+                if (cubeMaxY !== 0) { // Only adjust if Cube's max Y was found
+                    const currentHeight = boundingBox.max.y - boundingBox.min.y;
+                    boundingBox.max.y = cubeMaxY;
+                    boundingBox.min.y = cubeMaxY - currentHeight;
+                }
+
                 node.userData.boundingBox = boundingBox;
 
                 const collidable = {
