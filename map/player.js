@@ -1,6 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.124/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.124/examples/jsm/loaders/GLTFLoader.js';
-import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
 
 export const player = (() => {
   class Player {
@@ -226,7 +225,7 @@ export const player = (() => {
         let topY = 0;
 
         for (const collidable of collidables) {
-          
+          console.log("Rolling - Checking collidable:", collidable.model.name, collidable.type, collidable.bounds);
           // collidable 객체와 bounds 속성이 유효한지 확인
           if (!collidable || !collidable.bounds) {
             console.warn("Invalid collidable object encountered:", collidable);
@@ -234,15 +233,7 @@ export const player = (() => {
           }
 
           let currentCollidableBox;
-          if (collidable.cannonBody) {
-            // Use Cannon.js body's AABB for collision detection
-            const aabb = new CANNON.AABB();
-            collidable.cannonBody.shape.calculateWorldAABB(collidable.cannonBody.position, collidable.cannonBody.quaternion, aabb.lowerBound, aabb.upperBound);
-            currentCollidableBox = new THREE.Box3(
-              new THREE.Vector3(aabb.lowerBound.x, aabb.lowerBound.y, aabb.lowerBound.z),
-              new THREE.Vector3(aabb.upperBound.x, aabb.upperBound.y, aabb.upperBound.z)
-            );
-          } else if (collidable.type === 'sphere') {
+          if (collidable.type === 'sphere') {
             currentCollidableBox = new THREE.Box3();
             // collidable.bounds가 THREE.Sphere 인스턴스인지 확인 후 getBoundingBox 호출
             if (collidable.bounds instanceof THREE.Sphere) {
@@ -374,15 +365,7 @@ export const player = (() => {
           }
 
           let currentCollidableBox;
-          if (collidable.cannonBody) {
-            // Use Cannon.js body's AABB for collision detection
-            const aabb = new CANNON.AABB();
-            collidable.cannonBody.shape.calculateWorldAABB(collidable.cannonBody.position, collidable.cannonBody.quaternion, aabb.lowerBound, aabb.upperBound);
-            currentCollidableBox = new THREE.Box3(
-              new THREE.Vector3(aabb.lowerBound.x, aabb.lowerBound.y, aabb.lowerBound.z),
-              new THREE.Vector3(aabb.upperBound.x, aabb.upperBound.y, aabb.upperBound.z)
-            );
-          } else if (collidable.type === 'sphere') {
+          if (collidable.type === 'sphere') {
             currentCollidableBox = new THREE.Box3();
             // collidable.bounds가 THREE.Sphere 인스턴스인지 확인 후 getBoundingBox 호출
             if (collidable.bounds instanceof THREE.Sphere) {

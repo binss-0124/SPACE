@@ -99,6 +99,7 @@
           });
           this.cameraTargetOffset = new THREE.Vector3(0, 15, 10);
           this.rotationAngle = 4.715;
+          this.nature_.ToggleDebugVisuals(true);
         } else {
           setTimeout(checkStationLoaded, 100); // Retry after 100ms if not loaded yet
         }
@@ -135,6 +136,7 @@
 
       if (this.player_ && this.nature_) {
         const collidables = this.nature_.GetCollidables();
+        
         this.player_.Update(delta, this.rotationAngle, collidables);
         this.UpdateCamera();
       }
